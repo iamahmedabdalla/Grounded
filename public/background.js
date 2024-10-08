@@ -327,6 +327,8 @@ function parseLLMResponse(LLMPrediction) {
     confidence,
     summary,
   };
+
+  // Bug: summary not working
 }
 
 // Function sending email data to an LLM for scanning
@@ -338,7 +340,7 @@ const ScanEmailViaLLM = async (emailData) => {
     messages: [
       {
         role: "user",
-        content: `Please categorize the email as one of the following:
+        content: `Please categorise the email as one of the following:
 
 1.	Legitimate (Safe): A normal, safe email with no signs of tricks or bad intent.
 2.	Neutral (Caution): A harmless but unclear email, such as marketing or newsletters that don’t show clear signs of being legitimate or harmful.
@@ -398,6 +400,7 @@ Remind users never to share personal information, passwords, or financial detail
 Email for analysis:
 Subject: ${emailData.subject}
 From: ${emailData.senderName}
+From Email: ${emailData.senderEmail}
 Sender Domain: ${emailData.senderDomain}
 Date: ${emailData.date}
 Body:

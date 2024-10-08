@@ -1,71 +1,97 @@
 console.log("contentScript.js loaded");
 
+const getEmailData = async () => {
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 500; // ms
 
-// Function to extract email data from the page
-const getEmailData = () => {
-  let emailSubject =
-    document.querySelector("h2.hP")?.textContent || "No subject found";
-  // let emailSenderName =
-  //   document.querySelector("span.gD")?.textContent || "No sender found";
-  // let emailSenderEmail =
-  //   document.querySelector("span.go")?.textContent || "No sender email found";
+  const waitForElement = (selector) => {
+    return new Promise((resolve, reject) => {
+      let retries = 0;
+      const interval = setInterval(() => {
+        const element = document.querySelector(selector);
+        if (element) {
+          clearInterval(interval);
+          resolve(element);
+        } else if (retries >= MAX_RETRIES) { // Fixed condition to include MAX_RETRIES
+          clearInterval(interval);
+          reject(new Error(`Element ${selector} not found`));
+        }
+        retries++;
+      }, RETRY_DELAY);
+    });
+  };
 
-  // getting email sender name and email
-  let emailSenderName = document.querySelector(".gD")?.textContent || "Unknown sender";
-  let emailSenderEmail = document.querySelector("span[email]")?.getAttribute("email") || "Unknown email";
+  try {
+    // Wait for the necessary elements to be available
+    await waitForElement("h2.hP");
+    await waitForElement(".gD");
 
-  // Debug:
-  console.log("Email Sender Name:", emailSenderName + " Email Sender Email:", emailSenderEmail);
-
-
-
-
-  let emailDate =
-    document.querySelector("span.g3")?.textContent || "No date found";
-  let emailBody =
-    document
-      .querySelector("div.a3s")
+    // Now safely extract data
+    const emailSubject = document.querySelector("h2.hP")?.textContent.trim() || "No subject found";
+    const senderElement = document.querySelector(".gD");
+    const emailSenderName = senderElement?.textContent.trim() || "Unknown sender";
+    const emailSenderEmail = senderElement?.getAttribute("email") || "Unknown email";
+    const emailDate = document.querySelector("span.g3")?.textContent.trim() || "No date found";
+    const emailBodyElement = document.querySelector("div.a3s");
+    const emailBody = emailBodyElement
       ?.textContent.trim()
       .replace(/\s+/g, " ") || "No body found";
 
-  // Extracting URLs in the email body
-  let emailContentArea = document.querySelector("div.a3s");
-  let emailURLsFound = emailContentArea
-    ? emailContentArea.querySelectorAll(
-        // Feature:
-        // expand to detect other clickable links of other common protocols
-        'a[href^="http"], a[href^="https"], a[href^="mailto"], a[href^="ftp"], a[href^="tel"], a[href^="sms"]'
-      )
-    : [];
+    // Extract URLs from 'a' elements
+    const emailURLsFromLinks = emailBodyElement
+      ? Array.from(emailBodyElement.querySelectorAll('a[href]')).map(a => a.href)
+      : [];
 
-  // Unique Domain Names
-  let uniqueDomainNames = new Set();
-  emailURLsFound.forEach((a) => {
-    let domainName = new URL(a.href).hostname;
-    uniqueDomainNames.add(domainName);
-  });
+    // Extract URLs from plain text using regex
+    const urlRegex = /https?:\/\/[^\s<>"']+/g;
+    const textContent = emailBodyElement?.innerHTML || "";
+    const emailURLsFromText = [...textContent.matchAll(urlRegex)].map(match => match[0]);
 
-  // getting the sender domain
-  let emailSenderDomain =  emailSenderEmail.split("@").pop().replace(">", "").split(".").slice(-2).join(".");
+    // Combine and deduplicate URLs
+    const combinedUrls = [...emailURLsFromLinks, ...emailURLsFromText];
+    const uniqueUrls = Array.from(new Set(combinedUrls));
 
+    // Extract unique domains
+    const uniqueDomainNames = new Set();
+    uniqueUrls.forEach((url) => {
+      try {
+        const domainName = new URL(url).hostname;
+        uniqueDomainNames.add(domainName);
+      } catch (e) {
+        // Invalid URL, skip
+      }
+    });
 
-  let emailId = window.location.href.split("/").pop().split("?")[0];
+    // Sender domain
+    const emailSenderDomain = emailSenderEmail
+      .split("@")
+      .pop()
+      .replace(">", "")
+      .split(".")
+      .slice(-2)
+      .join(".");
 
-  // Return the email data
-  return {
-    subject: emailSubject,
-    senderName: emailSenderName,
-    senderEmail: emailSenderEmail,
-    date: emailDate,
-    senderDomain: emailSenderDomain,
-    body: emailBody,
-    urls: Array.from(emailURLsFound).map((a) => a.href),
-    uniqueDomains: Array.from(uniqueDomainNames),
-    emailId: emailId,
-  };
+    // Email ID
+    const emailId = window.location.href.split("/").pop().split("?")[0];
+
+    return {
+      subject: emailSubject,
+      senderName: emailSenderName,
+      senderEmail: emailSenderEmail,
+      date: emailDate,
+      senderDomain: emailSenderDomain,
+      body: emailBody,
+      urls: uniqueUrls,
+      uniqueDomains: Array.from(uniqueDomainNames),
+      emailId: emailId,
+      version: "1.1",
+      extractionTime: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error extracting email data:", error);
+    return null;
+  }
 };
-
-// first check if email is already scanned and stored in the local storage
 
 // Function to create and inject the email details UI
 const injectEmailScanningUI = () => {
@@ -109,11 +135,20 @@ const injectEmailScanningUI = () => {
   }
 };
 
+// Function to inject the email results UI
 const injectEmailResultsUI = (emailData, results, scanDate, classification, confidence, status) => {
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
-  container.style.backgroundColor = classification === "Danger" ? "#ffcdd2" : classification === "Caution" ? "#ffeb3b" : classification === "Legitimate" ? "#c8e6c9" : "#a4a1f7";
+  // Determine background color based on classification
+  const backgroundColors = {
+    Danger: "#ffcdd2",
+    Caution: "#ffeb3b",
+    Legitimate: "#c8e6c9",
+    Default: "#a4a1f7",
+  };
+
+  container.style.backgroundColor = backgroundColors[classification] || backgroundColors.Default;
   container.style.flexDirection = "column";
   container.style.alignItems = "flex-start";
 
@@ -126,25 +161,25 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
   };
 
   const content = `
-   ${status === "Success" ? "": `<h3 class="email-suspicion suspicious">Email Not Scanned. Please try again</h3>`}
+   ${status === "Success" ? "" : `<h3 class="email-suspicion suspicious">Email Not Scanned. Please try again</h3>`}
     <h2 class="email-subject">Subject: ${sanitiseHTML(emailData.subject)}</h2>
     <div class="email-summary">
-      <p><strong>Classification:</strong> ${sanitiseHTML(classification)}</p>
+      <p><strong>Classification:</strong> ${sanitiseHTML(classification || "N/A")}</p>
       
-      <p><strong>From Name:</strong> ${sanitiseHTML(emailData.senderName)}</p>
-      <p><strong>From Email:</strong> ${sanitiseHTML(emailData.senderEmail)}</p>
-      <p><strong>Scan Date:</strong> ${sanitiseHTML(new Date(scanDate).toLocaleString())}. But you received this email on <strong>${sanitiseHTML(emailData.date)}</strong></p>
+      <p><strong>From Name:</strong> ${sanitiseHTML(emailData.senderName || "N/A")}</p>
+      <p><strong>From Email:</strong> ${sanitiseHTML(emailData.senderEmail || "N/A")}</p>
+      <p><strong>Scan Date:</strong> ${sanitiseHTML(scanDate ? new Date(scanDate).toLocaleString() : "N/A")}. But you received this email on <strong>${sanitiseHTML(emailData.date || "N/A")}</strong></p>
     </div>
     <div class="toggle-section">
       <h3 class="toggle-header" data-target="analysis">LLM Analysis <span class="toggle-icon">▼</span></h3>
       <div class="toggle-content hidden" id="analysis">
-        <p>${results}</p>
+        <p>${results || "No analysis available."}</p>
       </div>
     </div>
     <div class="toggle-section">
       <h3 class="toggle-header" data-target="content">Content Found <span class="toggle-icon">▼</span></h3>
       <div class="toggle-content hidden" id="content">
-        <p>${sanitiseHTML(emailData.body)}</p>
+        <p>${sanitiseHTML(emailData.body || "No body found.")}</p>
       </div>
     </div>
     <div class="toggle-section">
@@ -187,7 +222,7 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
       const content = container.querySelector(`#${targetId}`);
       if (content) {
         content.classList.toggle("hidden");
-        // Also change the arrow icon
+        // Change the arrow icon
         const icon = header.querySelector(".toggle-icon");
         if (icon) {
           icon.textContent = content.classList.contains("hidden") ? "▼" : "▲";
@@ -196,16 +231,11 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
     });
   });
 
+  // Highlight Toggle Button
   const toggleButton = container.querySelector('#toggle-highlight');
   if (toggleButton) {
     toggleButton.addEventListener('click', () => {
-      // Debug:
-      // alert('Toggle button clicked');
-      // const toggleSections = container.querySelectorAll('div.a3s');
-      // Toggle the hidden class for each section
-      const contentElements = document.querySelectorAll(
-        'div.a3s'
-      );
+      const contentElements = document.querySelectorAll('div.a3s');
       contentElements.forEach((element) => {
         if (element.textContent.trim().length > 0) {
           element.style.backgroundColor = element.style.backgroundColor
@@ -216,73 +246,59 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
     });
   }
 
-  // Add event listener for rescan button
+
+
+  // Rescan Button
   const rescanButton = container.querySelector('#rescan-button');
   if (rescanButton) {
     rescanButton.addEventListener('click', () => {
-      // Debug:
-      // alert('Rescan button clicked');
-      // Inject the email scanning UI
       injectEmailScanningUI();
-      // Send email to background to check if email is already scanned
-      function processEmailData(emailData) {
-        try {
-          chrome.runtime.sendMessage(
-            { action: "rescanThisEmail", data: emailData },
-            (response) => {
-              //  show the results
-              injectEmailResultsUI(emailData, response.data.results, response.data.scanDate, response.data.classification, response.data.confidence, response.status);
-              console.log(
-                "Email processed with response",
-                response
-              );
-            }
-          );
-        } catch (error) {
-          if (error.message.includes("Extension context invalidated")) {
-            console.error("Extension context invalidated. Retrying...");
-            setTimeout(() => processEmailData(emailData), 1000); // Retry after 1 second
-          } else {
-            console.error("An unexpected error occurred:", error);
-          }
-        }
-      }
-      // Start processing the email data
       processEmailData(emailData);
     });
   }
-
-  
-  
-
-
-
 };
 
-// Show errors if any
-
+// Function to inject the email results UI in case of errors
 const injectErrorUI = (error) => {
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
-  container.style.backgroundColor = "#ffcdd2";
+  container.style.backgroundColor = "#ffcdd2"; // Red background for errors
   container.style.flexDirection = "column";
   container.style.alignItems = "flex-start";
 
   injectStyles();
 
+  const sanitiseHTML = (html) => {
+    const temp = document.createElement("div");
+    temp.textContent = html;
+    return temp.innerHTML;
+  };
+
   const content = `
-    <h3 class="email-suspicion suspicious">Error: ${error.message}</h3>
+    <h3 class="email-suspicion suspicious">Error: ${sanitiseHTML(error.message)}</h3>
+    <button id="rescan-button" class="rescan-button">Rescan Email</button>
   `;
 
   container.innerHTML = content;
-}
 
+  // Rescan Button
+  const rescanButton = container.querySelector('#rescan-button');
+  if (rescanButton) {
+    rescanButton.addEventListener('click', async () => {
+      try {
+        const emailData = await getEmailData();
+        injectEmailScanningUI();
+        processEmailData(emailData);
+      } catch (err) {
+        injectErrorUI(err);
+        console.error("Error during rescan:", err);
+      }
+    });
+  }
+};
 
-
-
-
-// inject Styles
+// Inject Styles
 const injectStyles = () => {
   const styles = `
     #injected-email-details {
@@ -385,20 +401,7 @@ const injectStyles = () => {
 // Variable to store the last processed email ID
 let lastProcessedEmailId = null;
 
-// Function to handle email data changes
-const handleEmailDataChange = () => {
-  const emailData = getEmailData();
-
-  if (emailData.emailId === lastProcessedEmailId) {
-    return;
-  }
-
-  lastProcessedEmailId = emailData.emailId;
-
-  // Inject the email scanning UI
-  injectEmailScanningUI();
-
-  // Send email to background to check if email is already scanned
+// Process email data
   function processEmailData(emailData) {
     try {
       chrome.runtime.sendMessage(
@@ -415,15 +418,37 @@ const handleEmailDataChange = () => {
     } catch (error) {
       if (error.message.includes("Extension context invalidated")) {
         console.error("Extension context invalidated. Retrying...");
-        setTimeout(() => processEmailData(emailData), 1000); // Retry after 1 second
+        setTimeout(() => processEmailData(emailData), 10000); // Retry after 10 second
       } else {
         console.error("An unexpected error occurred:", error);
       }
     }
   }
 
-  // Start processing the email data
-  processEmailData(emailData);
+// Function to handle email data changes
+const handleEmailDataChange = async () => {
+  try {
+    const emailData = await getEmailData();
+
+    if (!emailData) {
+      throw new Error("Failed to retrieve email data.");
+    }
+
+    if (emailData.emailId === lastProcessedEmailId) {
+      return;
+    }
+
+    lastProcessedEmailId = emailData.emailId;
+
+    // Inject the scanning UI
+    injectEmailScanningUI();
+
+    // Process the email data
+    processEmailData(emailData);
+  } catch (error) {
+    injectErrorUI(error);
+    console.error("Error handling email data change:", error);
+  }
 };
 
 // Variable to store the current URL
@@ -445,9 +470,3 @@ const checkUrlChange = () => {
 
 // Set up an interval to check for URL changes
 setInterval(checkUrlChange, 500); // Check every 500ms
-
-
-// utilities
-
-
-
