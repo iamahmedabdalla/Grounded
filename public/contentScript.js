@@ -12,7 +12,8 @@ const getEmailData = async () => {
         if (element) {
           clearInterval(interval);
           resolve(element);
-        } else if (retries >= MAX_RETRIES) { // Fixed condition to include MAX_RETRIES
+        } else if (retries >= MAX_RETRIES) { 
+          // Fixed condition to include MAX_RETRIES
           clearInterval(interval);
           reject(new Error(`Element ${selector} not found`));
         }
@@ -263,7 +264,7 @@ const injectErrorUI = (error) => {
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
-  container.style.backgroundColor = "#ffcdd2"; // Red background for errors
+  container.style.backgroundColor = "#ffcdd2"; 
   container.style.flexDirection = "column";
   container.style.alignItems = "flex-start";
 
@@ -402,28 +403,50 @@ const injectStyles = () => {
 let lastProcessedEmailId = null;
 
 // Process email data
-  function processEmailData(emailData) {
-    try {
-      chrome.runtime.sendMessage(
-        { action: "foundThisEmail", data: emailData },
-        (response) => {
-          //  show the results
-          injectEmailResultsUI(emailData, response.data.results, response.data.scanDate, response.data.classification, response.data.confidence, response.status);
-          console.log(
-            "Email processed with response",
-            response
+function processEmailData(emailData) {
+  // Try three times before giving up
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
+
+  function attemptProcessing() {
+    chrome.runtime.sendMessage(
+      { action: "foundThisEmail", data: emailData },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Chrome runtime error:", chrome.runtime.lastError);
+          handleError(new Error(chrome.runtime.lastError.message));
+        } else if (!response || !response.data) {
+          console.error("Invalid response from background script:", response);
+          handleError(new Error(response.message));
+        } else {
+          // Show the results
+          injectEmailResultsUI(
+            emailData,
+            response.data.results,
+            response.data.scanDate,
+            response.data.classification,
+            response.data.confidence,
+            response.status
           );
+          console.log("Email processed, got this response", response);
         }
-      );
-    } catch (error) {
-      if (error.message.includes("Extension context invalidated")) {
-        console.error("Extension context invalidated. Retrying...");
-        setTimeout(() => processEmailData(emailData), 10000); // Retry after 10 second
-      } else {
-        console.error("An unexpected error occurred:", error);
       }
+    );
+  }
+
+  function handleError(error) {
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      console.log(`Retrying (${retryCount}/${MAX_RETRIES}) in 10 seconds`);
+      setTimeout(attemptProcessing, 10000 * retryCount); // waiting for 10s
+    } else {
+      console.error("Max retries reached. Issue is " + error)
+      injectErrorUI(error);
     }
   }
+
+  attemptProcessing();
+}
 
 // Function to handle email data changes
 const handleEmailDataChange = async () => {
