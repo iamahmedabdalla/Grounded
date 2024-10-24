@@ -39,7 +39,7 @@ function parseLLMResponse(LLMPrediction) {
 
 // Function sending email data to an LLM for scanning
 async function ScanEmailViaLLM (emailData) {
-  console.log("ScanEmailViaLLM function called with:", emailData);
+  // console.log("ScanEmailViaLLM function called with:", emailData);
 
   // console.log("Debug: emailData", emailData);
 

@@ -44,7 +44,8 @@ const getEmailData = async () => {
       : [];
 
     // Extract URLs from plain text using regex
-    const urlRegex = /https?:\/\/[^\s<>"']+/g;
+    const urlRegex = /https?:\/\/[^\s<>"']+/g; // Security Issue: This is simple regex.
+
     const textContent = emailBodyElement?.innerHTML || "";
     const emailURLsFromText = [...textContent.matchAll(urlRegex)].map(match => match[0]);
 
@@ -174,7 +175,7 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
     <div class="toggle-section">
       <h3 class="toggle-header" data-target="analysis">LLM Analysis <span class="toggle-icon">▼</span></h3>
       <div class="toggle-content hidden" id="analysis">
-        <p>${results || "No analysis available."}</p>
+        <p>${sanitiseHTML(results || "No analysis available.")}</p>
       </div>
     </div>
     <div class="toggle-section">
