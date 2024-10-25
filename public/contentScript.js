@@ -12,7 +12,7 @@ const getEmailData = async () => {
         if (element) {
           clearInterval(interval);
           resolve(element);
-        } else if (retries >= MAX_RETRIES) { 
+        } else if (retries >= MAX_RETRIES) {
           // Fixed condition to include MAX_RETRIES
           clearInterval(interval);
           reject(new Error(`Element ${selector} not found`));
@@ -28,26 +28,34 @@ const getEmailData = async () => {
     await waitForElement(".gD");
 
     // Now safely extract data
-    const emailSubject = document.querySelector("h2.hP")?.textContent.trim() || "No subject found";
+    const emailSubject =
+      document.querySelector("h2.hP")?.textContent.trim() || "No subject found";
     const senderElement = document.querySelector(".gD");
-    const emailSenderName = senderElement?.textContent.trim() || "Unknown sender";
-    const emailSenderEmail = senderElement?.getAttribute("email") || "Unknown email";
-    const emailDate = document.querySelector("span.g3")?.textContent.trim() || "No date found";
+    const emailSenderName =
+      senderElement?.textContent.trim() || "Unknown sender";
+    const emailSenderEmail =
+      senderElement?.getAttribute("email") || "Unknown email";
+    const emailDate =
+      document.querySelector("span.g3")?.textContent.trim() || "No date found";
     const emailBodyElement = document.querySelector("div.a3s");
-    const emailBody = emailBodyElement
-      ?.textContent.trim()
-      .replace(/\s+/g, " ") || "No body found";
+    const emailBody =
+      emailBodyElement?.textContent.trim().replace(/\s+/g, " ") ||
+      "No body found";
 
     // Extract URLs from 'a' elements
     const emailURLsFromLinks = emailBodyElement
-      ? Array.from(emailBodyElement.querySelectorAll('a[href]')).map(a => a.href)
+      ? Array.from(emailBodyElement.querySelectorAll("a[href]")).map(
+          (a) => a.href
+        )
       : [];
 
     // Extract URLs from plain text using regex
     const urlRegex = /https?:\/\/[^\s<>"']+/g; // Security Issue: This is simple regex.
 
     const textContent = emailBodyElement?.innerHTML || "";
-    const emailURLsFromText = [...textContent.matchAll(urlRegex)].map(match => match[0]);
+    const emailURLsFromText = [...textContent.matchAll(urlRegex)].map(
+      (match) => match[0]
+    );
 
     // Combine and deduplicate URLs
     const combinedUrls = [...emailURLsFromLinks, ...emailURLsFromText];
@@ -138,7 +146,14 @@ const injectEmailScanningUI = () => {
 };
 
 // Function to inject the email results UI
-const injectEmailResultsUI = (emailData, results, scanDate, classification, confidence, status) => {
+const injectEmailResultsUI = (
+  emailData,
+  results,
+  scanDate,
+  classification,
+  confidence,
+  status
+) => {
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
@@ -150,7 +165,8 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
     Default: "#a4a1f7",
   };
 
-  container.style.backgroundColor = backgroundColors[classification] || backgroundColors.Default;
+  container.style.backgroundColor =
+    backgroundColors[classification] || backgroundColors.Default;
   container.style.flexDirection = "column";
   container.style.alignItems = "flex-start";
 
@@ -163,19 +179,33 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
   };
 
   const content = `
-   ${status === "Success" ? "" : `<h3 class="email-suspicion suspicious">Email Not Scanned. Please try again</h3>`}
+   ${
+     status === "Success"
+       ? ""
+       : `<h3 class="email-suspicion suspicious">Email Not Scanned. Please try again</h3>`
+   }
     <h2 class="email-subject">Subject: ${sanitiseHTML(emailData.subject)}</h2>
     <div class="email-summary">
-      <p><strong>Classification:</strong> ${sanitiseHTML(classification || "N/A")}</p>
+      <p><strong>Classification:</strong> ${sanitiseHTML(
+        classification || "N/A"
+      )}</p>
       
-      <p><strong>From Name:</strong> ${sanitiseHTML(emailData.senderName || "N/A")}</p>
-      <p><strong>From Email:</strong> ${sanitiseHTML(emailData.senderEmail || "N/A")}</p>
-      <p><strong>Scan Date:</strong> ${sanitiseHTML(scanDate ? new Date(scanDate).toLocaleString() : "N/A")}. But you received this email on <strong>${sanitiseHTML(emailData.date || "N/A")}</strong></p>
+      <p><strong>From Name:</strong> ${sanitiseHTML(
+        emailData.senderName || "N/A"
+      )}</p>
+      <p><strong>From Email:</strong> ${sanitiseHTML(
+        emailData.senderEmail || "N/A"
+      )}</p>
+      <p><strong>Scan Date:</strong> ${sanitiseHTML(
+        scanDate ? new Date(scanDate).toLocaleString() : "N/A"
+      )}. But you received this email on <strong>${sanitiseHTML(
+    emailData.date || "N/A"
+  )}</strong></p>
     </div>
     <div class="toggle-section">
       <h3 class="toggle-header" data-target="analysis">LLM Analysis <span class="toggle-icon">▼</span></h3>
       <div class="toggle-content hidden" id="analysis">
-        <p>${sanitiseHTML(results || "No analysis available.")}</p>
+        <p>${results || "No analysis available."}</p>
       </div>
     </div>
     <div class="toggle-section">
@@ -191,14 +221,18 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
           ${(emailData.urls || [])
             .map(
               (url) =>
-                `<li><a href="${sanitiseHTML(url)}" target="_blank">${sanitiseHTML(url)}</a></li>`
+                `<li><a href="${sanitiseHTML(
+                  url
+                )}" target="_blank">${sanitiseHTML(url)}</a></li>`
             )
             .join("")}
         </ul>
       </div>
     </div>
     <div class="toggle-section">
-      <h3 class="toggle-header" data-target="domains">Unique Domains Found (${emailData.uniqueDomains.length})
+      <h3 class="toggle-header" data-target="domains">Unique Domains Found (${
+        emailData.uniqueDomains.length
+      })
         <span class="toggle-icon">▼</span>
       </h3>
       <div class="toggle-content hidden" id="domains">
@@ -234,10 +268,10 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
   });
 
   // Highlight Toggle Button
-  const toggleButton = container.querySelector('#toggle-highlight');
+  const toggleButton = container.querySelector("#toggle-highlight");
   if (toggleButton) {
-    toggleButton.addEventListener('click', () => {
-      const contentElements = document.querySelectorAll('div.a3s');
+    toggleButton.addEventListener("click", () => {
+      const contentElements = document.querySelectorAll("div.a3s");
       contentElements.forEach((element) => {
         if (element.textContent.trim().length > 0) {
           element.style.backgroundColor = element.style.backgroundColor
@@ -248,12 +282,10 @@ const injectEmailResultsUI = (emailData, results, scanDate, classification, conf
     });
   }
 
-
-
   // Rescan Button
-  const rescanButton = container.querySelector('#rescan-button');
+  const rescanButton = container.querySelector("#rescan-button");
   if (rescanButton) {
-    rescanButton.addEventListener('click', () => {
+    rescanButton.addEventListener("click", () => {
       injectEmailScanningUI();
       processEmailData(emailData);
     });
@@ -265,7 +297,7 @@ const injectErrorUI = (error) => {
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
-  container.style.backgroundColor = "#ffcdd2"; 
+  container.style.backgroundColor = "#ffcdd2";
   container.style.flexDirection = "column";
   container.style.alignItems = "flex-start";
 
@@ -278,16 +310,19 @@ const injectErrorUI = (error) => {
   };
 
   const content = `
-    <h3 class="email-suspicion suspicious">Error: ${sanitiseHTML(error.message)}</h3>
+    <h3 class="email-suspicion suspicious">Error: ${sanitiseHTML(
+      error.message
+    )}</h3>
     <button id="rescan-button" class="rescan-button">Rescan Email</button>
+    <button id="refresh-page" class="rescan-button">Refresh Page</button>
   `;
 
   container.innerHTML = content;
 
   // Rescan Button
-  const rescanButton = container.querySelector('#rescan-button');
+  const rescanButton = container.querySelector("#rescan-button");
   if (rescanButton) {
-    rescanButton.addEventListener('click', async () => {
+    rescanButton.addEventListener("click", async () => {
       try {
         const emailData = await getEmailData();
         injectEmailScanningUI();
@@ -295,6 +330,17 @@ const injectErrorUI = (error) => {
       } catch (err) {
         injectErrorUI(err);
         console.error("Error during rescan:", err);
+      }
+    });
+  }
+
+  const refreshButton = container.querySelector("#refresh-page");
+  if (refreshButton) {
+    refreshButton.addEventListener("click", () => {
+      try {
+        window.location.reload();
+      } catch (err) {
+        console.error("Error refreshing page:", err);
       }
     });
   }
@@ -378,21 +424,22 @@ const injectStyles = () => {
       .processing-ui .loader {
           font-size: 24px;
       }
-    .rescan-button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-}
-.rescan-button:hover {
-  background-color: #0056b3;
-}
-  .scanned-highlight {
-      background-color: yellow;
-    }
+      .rescan-button {
+          margin-top: 10px;
+          padding: 5px 10px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 3px;
+          cursor: pointer;
+      }
+      .rescan-button:hover {
+          background-color: #0056b3;
+      }
+      
+      .scanned-highlight {
+          background-color: yellow;
+        }
   `;
 
   const styleElement = document.createElement("style");
@@ -441,7 +488,7 @@ function processEmailData(emailData) {
       console.log(`Retrying (${retryCount}/${MAX_RETRIES}) in 10 seconds`);
       setTimeout(attemptProcessing, 10000 * retryCount); // waiting for 10s
     } else {
-      console.error("Max retries reached. Issue is " + error)
+      console.error("Max retries reached. Issue is " + error);
       injectErrorUI(error);
     }
   }
@@ -494,3 +541,20 @@ const checkUrlChange = () => {
 
 // Set up an interval to check for URL changes
 setInterval(checkUrlChange, 500); // Check every 500ms
+
+// Add initial check when content script loads
+const initializeExtension = () => {
+  if (document.querySelector("h2.hP")) {
+    handleEmailDataChange();
+  } else {
+    // If email header not found immediately, wait and try again
+    setTimeout(() => {
+      if (document.querySelector("h2.hP")) {
+        handleEmailDataChange();
+      }
+    }, 1000);
+  }
+};
+
+// Run initialization
+initializeExtension();

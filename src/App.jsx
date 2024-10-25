@@ -1,149 +1,6 @@
-// import React, { useState, useEffect } from 'react';
-// import { Mail, User, Calendar, Link, Globe } from 'lucide-react';
-
-// const EmailScanner = () => {
-//   const [emailData, setEmailData] = useState(null);
-
-//   useEffect(() => {
-//     // Request email data from the background script when the component mounts
-//     chrome.runtime.sendMessage({ action: "foundThisEmail" }, (response) => {
-//       if (response.data) {
-//         setEmailData(response.data);
-//       }
-//     });
-//   }, []);
-
-//   if (!emailData) {
-//     return (
-//       <div className="flex items-center justify-center w-[500px] h-[400px] bg-blue-50">
-//         <p className="text-lg font-semibold text-blue-600">Loading email data...</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="w-[500px] h-[400px] bg-blue-50 p-6 overflow-y-auto">
-//       <h2 className="text-2xl font-bold text-blue-800 mb-4">Email Scanner</h2>
-//       <div className="bg-white rounded-lg shadow-md p-4 space-y-4">
-//         <div className="flex items-center space-x-2 text-blue-700">
-//           <Mail className="w-5 h-5" />
-//           <span className="font-semibold">Subject:</span>
-//           <span className="text-blue-600">{emailData.subject}</span>
-//         </div>
-//         <div className="flex items-center space-x-2 text-blue-700">
-//           <User className="w-5 h-5" />
-//           <span className="font-semibold">From:</span>
-//           <span className="text-blue-600">{emailData.senderName} ({emailData.senderEmail})</span>
-//         </div>
-//         <div className="flex items-center space-x-2 text-blue-700">
-//           <Calendar className="w-5 h-5" />
-//           <span className="font-semibold">Date:</span>
-//           <span className="text-blue-600">{emailData.date}</span>
-//         </div>
-//         <div className="border-t border-blue-200 pt-2">
-//           <p className="font-semibold text-blue-700 mb-1">Body:</p>
-//           <p className="text-blue-600 text-sm">{emailData.body}</p>
-//         </div>
-//         <div className="border-t border-blue-200 pt-2">
-//           <div className="flex items-center space-x-2 text-blue-700 mb-1">
-//             <Link className="w-5 h-5" />
-//             <span className="font-semibold">URLs:</span>
-//           </div>
-//           <ul className="list-disc list-inside text-blue-600 text-sm space-y-1 overflow-y-auto">
-//             {emailData.urls.map((url, index) => (
-//               <li key={index}>{url}</li>
-//             ))}
-//           </ul>
-//         </div>
-//         <div className="border-t border-blue-200 pt-2">
-//           <div className="flex items-center space-x-2 text-blue-700 mb-1">
-//             <Globe className="w-5 h-5" />
-//             <span className="font-semibold">Unique Domains:</span>
-//           </div>
-//           <ul className="list-disc list-inside text-blue-600 text-sm">
-//             {emailData.uniqueDomains.map((domain, index) => (
-//               <li key={index}>{domain}</li>
-//             ))}
-//           </ul>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default EmailScanner;
-// import React, { useState, useEffect } from 'react';
-// import Popup from './components/Popup';
-
-// const EmailScanner = () => {
-//   const [emailData, setEmailData] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchEmailData = () => {
-//       chrome.runtime.sendMessage({ action: "getStoredEmail" }, (response) => {
-//         if (chrome.runtime.lastError) {
-//           console.error(chrome.runtime.lastError.message);
-//           setError("Error communicating with background script");
-//           setLoading(false);
-//           return;
-//         }
-//         if (response && response.status === 'Success' && response.data) {
-//           setEmailData(response.data);
-//           setLoading(false);
-//         } else {
-//           console.error('No data received from background script:', response);
-//           setError("No email data available");
-//           setLoading(false);
-//         }
-//       });
-//     };
-
-//     fetchEmailData();
-
-//     // Set up listener for updates
-//     const messageListener = (message) => {
-//       if (message.action === "emailDataUpdated") {
-//         fetchEmailData();
-//       }
-//     };
-//     chrome.runtime.onMessage.addListener(messageListener);
-
-//     // Cleanup listener on component unmount
-//     return () => {
-//       chrome.runtime.onMessage.removeListener(messageListener);
-//     };
-//   }, []);
-
-//   if (loading) {
-//     return (
-//       <div className="flex items-center justify-center w-[500px] h-[400px] bg-blue-50">
-//         <p className="text-lg font-semibold text-blue-600">Loading email data...</p>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="flex items-center justify-center w-[500px] h-[400px] bg-blue-50">
-//         <p className="text-lg font-semibold text-red-600">{error}</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="w-[500px] h-[400px] bg-blue-50 p-4 overflow-hidden flex flex-col">
-//       <Popup emailData={emailData} />
-//     </div>
-//   );
-// };
-
-// export default EmailScanner;
-
 import React, { useState, useEffect } from 'react';
 import { Mail, User, Calendar, Link, Globe, RefreshCw } from 'lucide-react';
-import ScanningEmail from './components/ScanningEmail';
+// import ScanningEmail from './components/ScanningEmail';
 
 const EmailScanner = () => {
   const [emailData, setEmailData] = useState(null);
@@ -181,19 +38,12 @@ const EmailScanner = () => {
     };
     chrome.runtime.onMessage.addListener(messageListener);
 
-    // Cleanup listener on component unmount
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center w-[500px] h-[400px] bg-green-50">
-       <ScanningEmail />
-      </div>
-    );
-  }
+  
 
   if (error) {
     return (
@@ -237,15 +87,7 @@ const EmailScanner = () => {
           Result
         </button>
 
-        <button  className={
-          `px-4 py-2 rounded-t-lg transition-colors duration-200 ${
-            activeTab === 'Dashboard' ? 'bg-green-500 text-white' : 'bg-green-200 text-green-800'
-
-          }`}
-          onClick={() => chrome.tabs.create({ url: 'http://localhost:3000/' })}
-        >
-          Dashboard
-        </button>
+      
 
       </div>
       

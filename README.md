@@ -3,7 +3,7 @@
 
 This project is a browser extension designed to enhance email security by using an on-device Large Language Model (LLM) to detect phishing and scam emails. It classifies emails into categories such as legitimate, neutral, or scam/spam and provides detailed analysis directly within the Gmail interface.
 
-This project is part of a proof-of-concept study to demonstrate the viability of on-device LLMs for detecting advanced phishing attacks that bypass traditional spam filters
+This project is part of a proof-of-concept study to demonstrate the viability of on-device LLMs for detecting advanced phishing attacks that bypass traditional filters
 
 
 
@@ -17,8 +17,8 @@ after that,
 Install the extension with npm
 
 ```bash
-  npm install mythirdextension
-  cd mythirdextension
+  npm install Grounded
+  cd Grounded
 ```
 
 #### Load the extension into Chrome:

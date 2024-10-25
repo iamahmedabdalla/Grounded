@@ -1,6 +1,6 @@
 console.log("background.js loaded");
 
-const LLM_API_URL = "http://localhost:11434/api/chat";
+const LLM_API_URL = "http://localhost:11444/api/chat";
 const LLM_NAME = "gemma2:2b";
 
 // Algorithm extracting message from llm to friendly format
@@ -193,7 +193,7 @@ Final Note: Please remember to be cautious and thorough in your analysis. If you
     
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       errorMessage = 'Failed to communicate with LLM due to a network error or CORS issue';
-      potentialSolution = '1. Make Sure the LLM server is running\n2. Make Sure the LLM server is not blocked by the browser, check out this article to solve https://medium.com/dcoderai/how-to-handle-cors-settings-in-ollama-a-comprehensive-guide-ee2a5a1beef0';
+      potentialSolution = '1. Make Sure the LLM server is running\n2. Make Sure the LLM server is not blocking the extension, check out this article to solve https://medium.com/dcoderai/how-to-handle-cors-settings-in-ollama-a-comprehensive-guide-ee2a5a1beef0';
       errorStatusCode = error.statusCode // bug: error.statusCode is undefined for some reason status code cannot be retrieved
     }
 
