@@ -1,8 +1,8 @@
-console.log("contentScript.js loaded");
+// console.log("contentScript.js loaded");
 
 const getEmailData = async () => {
   const MAX_RETRIES = 5;
-  const RETRY_DELAY = 500; // ms
+  const RETRY_DELAY = 500; 
 
   const waitForElement = (selector) => {
     return new Promise((resolve, reject) => {
@@ -13,7 +13,7 @@ const getEmailData = async () => {
           clearInterval(interval);
           resolve(element);
         } else if (retries >= MAX_RETRIES) {
-          // Fixed condition to include MAX_RETRIES
+         
           clearInterval(interval);
           reject(new Error(`Element ${selector} not found`));
         }
@@ -23,11 +23,11 @@ const getEmailData = async () => {
   };
 
   try {
-    // Wait for the necessary elements to be available
+
     await waitForElement("h2.hP");
     await waitForElement(".gD");
 
-    // Now safely extract data
+
     const emailSubject =
       document.querySelector("h2.hP")?.textContent.trim() || "No subject found";
     const senderElement = document.querySelector(".gD");
@@ -57,22 +57,22 @@ const getEmailData = async () => {
       (match) => match[0]
     );
 
-    // Combine and deduplicate URLs
+
     const combinedUrls = [...emailURLsFromLinks, ...emailURLsFromText];
     const uniqueUrls = Array.from(new Set(combinedUrls));
 
-    // Extract unique domains
+
     const uniqueDomainNames = new Set();
     uniqueUrls.forEach((url) => {
       try {
         const domainName = new URL(url).hostname;
         uniqueDomainNames.add(domainName);
       } catch (e) {
-        // Invalid URL, skip
+
       }
     });
 
-    // Sender domain
+
     const emailSenderDomain = emailSenderEmail
       .split("@")
       .pop()
@@ -81,7 +81,7 @@ const getEmailData = async () => {
       .slice(-2)
       .join(".");
 
-    // Email ID
+
     const emailId = window.location.href.split("/").pop().split("?")[0];
 
     return {
@@ -103,7 +103,7 @@ const getEmailData = async () => {
   }
 };
 
-// Function to create and inject the email details UI
+
 const injectEmailScanningUI = () => {
   // Remove existing injected UI if any
   const existingUI = document.getElementById("injected-email-details");
@@ -111,7 +111,7 @@ const injectEmailScanningUI = () => {
     existingUI.remove();
   }
 
-  // Creating scanning interface
+
   const container = document.createElement("div");
   container.id = "injected-email-details";
   container.style.cssText = `
@@ -130,7 +130,7 @@ const injectEmailScanningUI = () => {
         transition: all 0.3s ease;
     `;
 
-  // Create the content
+
   const content = `
         <p>Scanning this email</p>
         <span class="loader">⌛</span>
@@ -138,14 +138,14 @@ const injectEmailScanningUI = () => {
 
   container.innerHTML = content;
 
-  // Find the email content container and insert our UI before it
+
   const emailContainer = document.querySelector(".a3s.aiL");
   if (emailContainer) {
     emailContainer.parentNode.insertBefore(container, emailContainer);
   }
 };
 
-// Function to inject the email results UI
+
 const injectEmailResultsUI = (
   emailData,
   results,
@@ -157,7 +157,7 @@ const injectEmailResultsUI = (
   const container = document.getElementById("injected-email-details");
   if (!container) return;
 
-  // Determine background color based on classification
+
   const backgroundColors = {
     Danger: "#ffcdd2",
     Caution: "#ffeb3b",
@@ -450,7 +450,7 @@ const injectStyles = () => {
 // Variable to store the last processed email ID
 let lastProcessedEmailId = null;
 
-// Process email data
+
 function processEmailData(emailData) {
   // Try three times before giving up
   const MAX_RETRIES = 3;
@@ -476,7 +476,7 @@ function processEmailData(emailData) {
             response.data.confidence,
             response.status
           );
-          console.log("Email processed, got this response", response);
+          // console.log("Email processed, got this response", response);
         }
       }
     );

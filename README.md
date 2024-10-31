@@ -1,17 +1,28 @@
 
 # On-Device LLM Email Security Browser Extension
 
-This project is a browser extension designed to enhance email security by using an on-device Large Language Model (LLM) to detect phishing and scam emails. It classifies emails into categories such as legitimate, neutral, or scam/spam and provides detailed analysis directly within the Gmail interface.
+This project is a browser extension designed to enhance email security by using an on-device Large Language Model (LLM) to detect phishing and scam emails. It classifies emails into legitimate, neutral, or scam/spam category, and provide detailed analysis directly within the Gmail interface.
 
-This project is part of a proof-of-concept study to demonstrate the viability of on-device LLMs for detecting advanced phishing attacks that bypass traditional filters
+This project is a proof-of-concept study to demonstrate the viability of on-device LLMs for detecting advanced phishing attacks that bypass traditional filters
+
+## Nitty Gritty
 
 
+1. The contentScript listens for changes in url and detect when email is loaded
+2. Then contentScript extracts key elements from Gmail UI and sends to the background script.
+3. Then background scripts checks if the email is already stored using chrome local storage
+4. If already analysed it retrives that and send to the contentScript, if not it send to the LLM to be scanned then stores email with results & sends to the contentScript
+5. Then contentScript displays with different background based on the analysis
+
+
+![til](./images/image.png)
 
 ## Setup
 
 This extension assumes you have Ollama downloaded with gemma-2 2b model loaded and running locally. The LLM API must be available at `http://localhost:11434/api/chat`.
 
 if not download and setup Ollama from [here](https://ollama.com)
+also [read](https://medium.com/dcoderai/how-to-handle-cors-settings-in-ollama-a-comprehensive-guide-ee2a5a1beef0) this article for setting Ollama to allow requests from Chrome. - this is important
 
 after that,
 Install the extension with npm
@@ -95,23 +106,12 @@ The extension uses a locally hosted LLM API to perform email analysis.
 - **LLM Model**: Gemma2:2b
 
 
-## Features
-
-
-- Detailed Email Analysis with Explanations
-
-
 ## Limitations
 
 - Only Works on Gmail
 - Only Works on Chrome
 - High CPU/GPU usage
 - High False Negatives
-
-
-## Author
-
-- [@iamahmedabdalla](https://www.github.com/iamahmedabdalla)
 
 
 ## Demo

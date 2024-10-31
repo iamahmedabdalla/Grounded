@@ -48,7 +48,7 @@ const EmailScanner = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center w-[500px] h-[400px] bg-green-50">
-        <p className="text-lg font-semibold text-red-600">{error}</p>
+        <p className="text-lg font-semibold text-red-600">{error} </p>
       </div>
     );
   }

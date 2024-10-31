@@ -13,22 +13,8 @@ During my testing, I found the following vulnerabilities:
 | High   | An attacker can bypass the simple regex used to extract URLs from the email body | Input Validation |
 
 
-Lastly, DOMPurify should be used to sanitise all HTML content effectively.
+Lastly, I will be implement DOMPurify to sanitise all HTML content more effectively.
 
-## Privacy & Data Handling
-
-This extension:
-1. Only processes emails within your Gmail interface
-2. Does not store email content, only in your Chrome Browser
-3. Uses Chrome storage for saving scan results
-4. Communicates only with your configured local LLM server
-
-## Dependencies & Security
-
-The extension relies on:
-1. Local LLM server via Ollama
-2. Chrome Storage API
-3. Gmail's DOM structure
 
 ## Current Limitations
 
@@ -40,10 +26,4 @@ The extension relies on:
 - Extension doesn't effectively analyse URLS (Doesnt talk to VirusTotal or similar tool)
 
 
-
-## Future Work
-
-- Fix the vulnerabilities
-- Analyse attachments
-- Analyse URLs (talk to VirusTotal or similar tool)
 

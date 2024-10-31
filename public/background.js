@@ -1,6 +1,9 @@
-console.log("background.js loaded");
+// console.log("background.js loaded");
 
-const LLM_API_URL = "http://localhost:11444/api/chat";
+// const LLM_API_URL = "http://localhost:11434/api/chat";
+// const LLM_API_URL = "http://130.162.176.197:11434/api/chat";
+const LLM_API_URL = "http://130.162.176.197:8000/api/chat";
+
 const LLM_NAME = "gemma2:2b";
 
 // Algorithm extracting message from llm to friendly format
@@ -38,7 +41,7 @@ function parseLLMResponse(LLMPrediction) {
 }
 
 // Function sending email data to an LLM for scanning
-async function ScanEmailViaLLM (emailData) {
+async function ScanEmailViaLLM(emailData) {
   // console.log("ScanEmailViaLLM function called with:", emailData);
 
   // console.log("Debug: emailData", emailData);
@@ -48,11 +51,19 @@ async function ScanEmailViaLLM (emailData) {
     messages: [
       {
         role: "user",
-        content: `Please categorise the email as one of the following:
+        content: `
+        <assignment>
+        You name is Emily, you are an advanced AI assistant that especialise in email security and phishing detection, helping not tech savvy individual with their emails and detecting any potential scam or phishing attempt. the person recieves email from big companies, banks, government agencies, frineds ect.. They need your help to classify the email as one of the following:
 
 1.	Legitimate (Safe): A normal, safe email with no signs of tricks or bad intent.
 2.	Neutral (Caution): A harmless but unclear email, such as marketing or newsletters that don’t show clear signs of being legitimate or harmful.
 3.	Spam/Scam (Dangerous): A suspicious email that might try to trick or cheat the recipient. This includes phishing (trying to steal information), scams, or other harmful content.
+
+Do not over classify as caution, if the email is from a legitimate company, do not classify as scam or caution.
+
+</assignment>
+
+<factors>
 
 When analyzing the email, consider these factors:
 
@@ -75,7 +86,11 @@ Unexpected attachments or requests to download files
 Links that lead to unfamiliar websites
 Impersonation of well-known companies, banks, or government agencies
 Vague or generic greetings and content
+if the email domain is from legitimate company, do not classify as scam or caution.
 
+</factors>
+
+<format>
 After analyzing, provide your result in this format:
 
 Safety Rating: [Legitimate/Caution/Danger]
@@ -96,14 +111,23 @@ Summary:
 
 [A short, simple summary of your analysis, focusing on why the email is Safe, Caution, or Danger, in easy-to-understand language]
 
-Remember, Emily:
+</format>
+
+<tone>
 
 Use simple, friendly language as if you're explaining to a grandparent.
 Use very concise, clear and short sentences.
 Be confident in your assessment, but remind the user that you're an AI assistant and they should trust their instincts too.
-If you're unsure, it's better to err on the side of caution or danger.
+
+</tone>
+<recommendations>
+
 Encourage the user to reach out to the supposed sender through a known, trusted method like visiting the bank physically, if they're unsure about an email's legitimacy.
 Remind users never to share personal information, passwords, or financial details via email.
+
+</recommendations>
+
+<email>
 
 Email for analysis:
 Subject: ${emailData.subject}
@@ -117,7 +141,12 @@ ${emailData.body}
 Additional Info:
 Other Domains Found: ${emailData.uniqueDomains}
 
-Final Note: Please remember to be cautious and thorough in your analysis. If you're unsure, it's better to classify the email as Caution or Danger. Very short and concise sentences are best.
+</email>
+
+<finalnote>
+
+Final Note: Please remember to be cautious and thorough in your analysis.if the domain clearly from a normal/famous company is Definitely a Legitimate email, do not over fatique user with many Cautions. Think step by step.
+</finalnote>
 `,
       },
     ],
@@ -130,27 +159,28 @@ Final Note: Please remember to be cautious and thorough in your analysis. If you
     const response = await fetch(LLM_API_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
+      mode: 'no-cors',
       body: JSON.stringify(llmRequestPayload),
     });
 
     // Debug:
-    console.log("Response received:", response);
-    console.log("Response status:", response.status);
-    console.log("Response ok:", response.ok);
+    // console.log("Response received:", response);
+    // console.log("Response status:", response.status);
+    // console.log("Response ok:", response.ok);
 
     // Handle HTTP errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Failed to fetch from LLM, status:', response.status);
-      console.error('Error response:', errorText);
-      console.error('Error Code:', response.status);
+      console.error("Failed to fetch from LLM, status:", response.status);
+      console.error("Error response:", errorText);
+      console.error("Error Code:", response.status);
 
       console.log("Debug: errorText", errorText);
 
       return {
-        status: 'Error',
+        status: "Error",
         message: `Failed to communicate with LLM.`,
         statusCode: response.status,
         statusText: response.statusText,
@@ -164,16 +194,12 @@ Final Note: Please remember to be cautious and thorough in your analysis. If you
     let LLMPrediction = data.message.content;
 
     // Parse LLM Response
-    let {
-      sanitisedLLMPrediction,
-      classification,
-      confidence,
-      summary,
-    } = parseLLMResponse(LLMPrediction);
+    let { sanitisedLLMPrediction, classification, confidence, summary } =
+      parseLLMResponse(LLMPrediction);
 
     // Debug:
-    console.log("Classification:", classification);
-    console.log("Summary:", summary);
+    // console.log("Classification:", classification);
+    // console.log("Summary:", summary);
 
     let updatedEmailData = {
       ...emailData,
@@ -186,25 +212,30 @@ Final Note: Please remember to be cautious and thorough in your analysis. If you
 
     return { status: "Success", data: updatedEmailData };
   } catch (error) {
-    console.error("Error in ScanEmailViaLLM:", error);
+    // console.error("Error in ScanEmailViaLLM:", error);
 
-    let errorMessage = 'Failed to communicate with LLM';
+    let errorMessage = "Failed to communicate with LLM";
     let errorDetails = error.message || error.toString();
-    
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      errorMessage = 'Failed to communicate with LLM due to a network error or CORS issue';
-      potentialSolution = '1. Make Sure the LLM server is running\n2. Make Sure the LLM server is not blocking the extension, check out this article to solve https://medium.com/dcoderai/how-to-handle-cors-settings-in-ollama-a-comprehensive-guide-ee2a5a1beef0';
-      errorStatusCode = error.statusCode // bug: error.statusCode is undefined for some reason status code cannot be retrieved
+
+    if (
+      error instanceof TypeError &&
+      error.message.includes("Failed to fetch")
+    ) {
+      errorMessage =
+        "Failed to communicate with LLM due to a network error or CORS issue";
+      potentialSolution =
+        "1. Make Sure the LLM server is running\n2. Make Sure the LLM server is not blocking the extension, check out this article to solve https://medium.com/dcoderai/how-to-handle-cors-settings-in-ollama-a-comprehensive-guide-ee2a5a1beef0";
+      errorStatusCode = error.statusCode; // bug: error.statusCode is undefined for some reason status code cannot be retrieved
     }
 
     return {
-      status: 'Error',
-      message: errorMessage + "\n Try the following solution: " + potentialSolution,
+      status: "Error",
+      message:
+        errorMessage + "\n Try the following solution: " + potentialSolution,
       details: errorDetails,
-     
     };
   }
-};
+}
 
 // Check if email is already stored
 async function CheckEmailFromStoredEmails(emailID, emailData) {
@@ -221,7 +252,7 @@ async function CheckEmailFromStoredEmails(emailID, emailData) {
       await chrome.storage.local.set({
         currentEmailId: emailID,
       });
-      console.log("Email already stored", email);
+      // console.log("Email already stored", email);
       return { status: "Success", data: email };
     } else {
       // Email is not stored; process it with ScanEmailViaLLM
@@ -271,7 +302,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
         .catch((error) => {
           console.error("Error in foundThisEmail:", error);
-          sendResponse({ status: "Error", message: error.message, details: error.stack });
+          sendResponse({
+            status: "Error",
+            message: error.message,
+            details: error.stack,
+          });
         });
     } else {
       sendResponse({ status: "Error", message: "Invalid email data" });
@@ -322,10 +357,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
         .catch((error) => {
           console.error("Unexpected error in rescanThisEmail:", error);
-          sendResponse({ 
-            status: "Error", 
+          sendResponse({
+            status: "Error",
             message: "Unexpected error",
-            details: error.message || error.toString()
+            details: error.message || error.toString(),
           });
         });
     } else {
