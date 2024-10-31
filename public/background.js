@@ -1,8 +1,6 @@
 // console.log("background.js loaded");
 
-// const LLM_API_URL = "http://localhost:11434/api/chat";
-// const LLM_API_URL = "http://130.162.176.197:11434/api/chat";
-const LLM_API_URL = "http://130.162.176.197:8000/api/chat";
+const LLM_API_URL = "http://localhost:11434/api/chat";
 
 const LLM_NAME = "gemma2:2b";
 
